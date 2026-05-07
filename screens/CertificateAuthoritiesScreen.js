@@ -228,8 +228,8 @@ export function CertificateAuthoritiesScreen({ reloadKey, onDataChanged }) {
           <EntityRow
             key={item.ca_id}
             title={item.name}
-            subtitle={`${item.ca_type || "CA"} - expire le ${formatDate(item.expires_at)}`}
-            meta={`ID ${item.ca_id}`}
+            subtitle={`ID: ${item.ca_id} - ${item.ca_type || "CA"} - expire le ${formatDate(item.expires_at)}`}
+            meta={`CA #${item.ca_id}`}
             badgeLabel={item.status}
             badgeTone={item.ca_type === "ROOT" ? "accent" : "info"}
             onPress={() => loadChain(item.ca_id)}

@@ -20,9 +20,9 @@ const CERT_TYPES = ['SERVER', 'CLIENT', 'EMAIL', 'CODE_SIGNING'].map((t) => ({
 }));
 
 const initialImportForm = {
-  common_name: '',
-  cert_type: 'SERVER',
-  ca_id: '',
+  common_name: "",
+  cert_type: "SERVER",
+  ca_id: "",
   selectedCertFile: null,
   selectedKeyFile: null,
 };
@@ -42,12 +42,12 @@ export function CertificatesScreen({ reloadKey, onDataChanged }) {
   const [csrs, setCsrs] = useState([]);
   const [csrsSummary, setCsrsSummary] = useState([]);
   const [details, setDetails] = useState(null);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [signForm, setSignForm] = useState({
-    csr_id: '',
-    ca_id: '',
-    validity_days: '365',
-    cert_type: 'SERVER',
+    csr_id: "",
+    ca_id: "",
+    validity_days: "365",
+    cert_type: "SERVER",
   });
   const [importForm, setImportForm] = useState(initialImportForm);
 
@@ -70,7 +70,7 @@ export function CertificatesScreen({ reloadKey, onDataChanged }) {
       setCsrsSummary(csrsSummaryResult);
     } catch (loadError) {
       setError(loadError.message);
-      notify('Echec', loadError.message);
+      notify("Echec", loadError.message);
     }
   };
 
@@ -80,14 +80,14 @@ export function CertificatesScreen({ reloadKey, onDataChanged }) {
 
   const execute = async (action, successMessage) => {
     try {
-      setError('');
+      setError("");
       await action();
-      notify('Succes', successMessage);
+      notify("Succes", successMessage);
       await loadData();
       onDataChanged?.();
     } catch (actionError) {
       setError(actionError.message);
-      notify('Echec', actionError.message);
+      notify("Echec", actionError.message);
     }
   };
 
@@ -99,17 +99,17 @@ export function CertificatesScreen({ reloadKey, onDataChanged }) {
           validity_days: Number(signForm.validity_days),
           cert_type: signForm.cert_type,
         }),
-      'Fichier .crt genere depuis le CSR et la CA selectionnes.',
+      "Fichier .crt genere depuis le CSR et la CA selectionnes.",
     );
 
   const openDetails = async (certId) => {
     try {
-      setError('');
+      setError("");
       const result = await certificateService.details(certId);
       setDetails(result);
     } catch (detailError) {
       setError(detailError.message);
-      notify('Echec', detailError.message);
+      notify("Echec", detailError.message);
     }
   };
 
@@ -117,7 +117,7 @@ export function CertificatesScreen({ reloadKey, onDataChanged }) {
     await execute(
       () =>
         certificateService.update(item.cert_id, {
-          status: 'REVOKED',
+          status: "REVOKED",
           common_name: item.common_name,
           cert_type: item.cert_type,
           algorithm: item.algorithm,
@@ -134,11 +134,11 @@ export function CertificatesScreen({ reloadKey, onDataChanged }) {
           common_name: importForm.common_name,
           cert_type: importForm.cert_type,
           ca_id: importForm.ca_id ? Number(importForm.ca_id) : null,
-          file_format: importForm.selectedCertFile?.extension || 'pem',
+          file_format: importForm.selectedCertFile?.extension || "pem",
           certificate_base64: importForm.selectedCertFile?.base64,
           private_key_base64: importForm.selectedKeyFile?.base64,
         }),
-      'CRT importe et ajoute a la liste des artefacts.',
+      "CRT importe et ajoute a la liste des artefacts.",
     );
 
   const csrOptions = csrsSummary.map((c) => ({
@@ -156,7 +156,11 @@ export function CertificatesScreen({ reloadKey, onDataChanged }) {
 
   return (
     <ScreenContainer>
-      <TopHero title="CRT" subtitle="Signature stricte depuis CSR + CA" meta="Equivalent OpenSSL x509 -req" />
+      <TopHero
+        title="CRT"
+        subtitle="Signature stricte depuis CSR + CA"
+        meta="Equivalent OpenSSL x509 -req"
+      />
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
@@ -186,33 +190,41 @@ export function CertificatesScreen({ reloadKey, onDataChanged }) {
       </SectionCard>
 
       <SectionCard title="CSR disponibles">
-        {pendingCsrs.length ? pendingCsrs.map((item) => (
-          <EntityRow
-            key={item.csr_id}
-            title={item.common_name}
-            subtitle={`${item.algorithm || 'N/A'} - ${item.status}`}
-            meta={`ID CSR ${item.csr_id}`}
-            badgeLabel="CSR"
-            badgeTone="info"
-            actions={<PrimaryButton compact tone="soft" label="Choisir" onPress={() => setSignForm({ ...signForm, csr_id: String(item.csr_id) })} />}
-          />
-        )) : (
+        {pendingCsrs.length ? (
+          pendingCsrs.map((item) => (
+            <EntityRow
+              key={item.csr_id}
+              title={item.common_name}
+              subtitle={`ID: ${item.csr_id} - ${item.algorithm || "N/A"} - ${item.status}`}
+              meta={`CSR #${item.csr_id}`}
+              badgeLabel="CSR"
+              badgeTone="info"
+              actions={
+                null
+              }
+            />
+          ))
+        ) : (
           <Text style={styles.helper}>Aucun CSR en attente de signature.</Text>
         )}
       </SectionCard>
 
       <SectionCard title="CA disponibles">
-        {cas.length ? cas.map((item) => (
-          <EntityRow
-            key={item.ca_id}
-            title={item.name}
-            subtitle={`${item.ca_type || 'CA'} - ${item.status}`}
-            meta={`ID CA ${item.ca_id}`}
-            badgeLabel="CA"
-            badgeTone={item.ca_type === 'ROOT' ? 'accent' : 'info'}
-            actions={<PrimaryButton compact tone="soft" label="Choisir" onPress={() => setSignForm({ ...signForm, ca_id: String(item.ca_id) })} />}
-          />
-        )) : (
+        {cas.length ? (
+          cas.map((item) => (
+            <EntityRow
+              key={item.ca_id}
+              title={item.name}
+              subtitle={`ID: ${item.ca_id} - ${item.ca_type || "CA"} - ${item.status}`}
+              meta={`CA #${item.ca_id}`}
+              badgeLabel="CA"
+              badgeTone={item.ca_type === "ROOT" ? "accent" : "info"}
+              actions={
+                null
+              }
+            />
+          ))
+        ) : (
           <Text style={styles.helper}>Aucune CA disponible pour signer.</Text>
         )}
       </SectionCard>
@@ -243,25 +255,43 @@ export function CertificatesScreen({ reloadKey, onDataChanged }) {
         <PrimaryButton label="Importer le CRT" onPress={importCertificate} />
       </SectionCard>
 
-      <SectionCard title="Liste des CRT" subtitle="Touchez un certificat pour voir les details">
+      <SectionCard
+        title="Liste des CRT"
+        subtitle="Touchez un certificat pour voir les details"
+      >
         {certificates.map((item) => {
           const daysUntil = getDaysUntil(item.expires_at);
           return (
             <EntityRow
               key={item.cert_id}
               title={item.common_name}
-              subtitle={`${item.cert_type || 'CERT'} - ${item.algorithm || 'N/A'}`}
-              meta={`Expire le ${formatDate(item.expires_at)}${item.ca_name ? ` - signe par ${item.ca_name}` : ''}`}
+              subtitle={`ID: ${item.cert_id} - ${item.cert_type || "CERT"} - ${item.algorithm || "N/A"}`}
+              meta={`Expire le ${formatDate(item.expires_at)}${item.ca_name ? ` - signe par ${item.ca_name}` : ""}`}
               badgeLabel={item.status}
               badgeTone={badgeToneFromStatus(item.status, daysUntil)}
               onPress={() => openDetails(item.cert_id)}
               actions={
                 <View style={styles.actions}>
-                  <PrimaryButton compact tone="ghost" label="Exporter" onPress={() => execute(async () => {
-                    const exported = await certificateService.exportOne(item.cert_id, 'pem');
-                    await saveExportFiles(exported.files);
-                  }, `Export PEM de ${item.common_name} prepare.`)} />
-                  <PrimaryButton compact tone="danger" label="Revoquer" onPress={() => revokeCertificate(item)} />
+                  <PrimaryButton
+                    compact
+                    tone="ghost"
+                    label="Exporter"
+                    onPress={() =>
+                      execute(async () => {
+                        const exported = await certificateService.exportOne(
+                          item.cert_id,
+                          "pem",
+                        );
+                        await saveExportFiles(exported.files);
+                      }, `Export PEM de ${item.common_name} prepare.`)
+                    }
+                  />
+                  <PrimaryButton
+                    compact
+                    tone="danger"
+                    label="Revoquer"
+                    onPress={() => revokeCertificate(item)}
+                  />
                 </View>
               }
             />
@@ -273,30 +303,51 @@ export function CertificatesScreen({ reloadKey, onDataChanged }) {
         {details ? (
           <View style={styles.detailBox}>
             <Text style={styles.detailTitle}>{details.common_name}</Text>
-            <Text style={styles.detailLine}>SANs: {(details.sans || []).join(', ') || 'Aucun'}</Text>
-            <Text style={styles.detailLine}>Signe par: {details.ca?.name || 'Aucune CA'}</Text>
-            <Text style={styles.detailLine}>Algorithme: {details.algorithm}</Text>
-            <Text style={styles.detailLine}>Expiration: {formatDate(details.validity?.expires_at)}</Text>
-            <Text style={styles.detailLine}>Sujet: {details.subject_dn || 'N/A'}</Text>
-            <Text style={styles.detailLine}>Empreinte SHA-256: {details.fingerprint_sha256 || 'N/A'}</Text>
+            <Text style={styles.detailLine}>
+              SANs: {(details.sans || []).join(", ") || "Aucun"}
+            </Text>
+            <Text style={styles.detailLine}>
+              Signe par: {details.ca?.name || "Aucune CA"}
+            </Text>
+            <Text style={styles.detailLine}>
+              Algorithme: {details.algorithm}
+            </Text>
+            <Text style={styles.detailLine}>
+              Expiration: {formatDate(details.validity?.expires_at)}
+            </Text>
+            <Text style={styles.detailLine}>
+              Sujet: {details.subject_dn || "N/A"}
+            </Text>
+            <Text style={styles.detailLine}>
+              Empreinte SHA-256: {details.fingerprint_sha256 || "N/A"}
+            </Text>
           </View>
         ) : (
-          <Text style={styles.helper}>Selectionne un CRT pour afficher ses details.</Text>
+          <Text style={styles.helper}>
+            Selectionne un CRT pour afficher ses details.
+          </Text>
         )}
       </SectionCard>
 
-      <SectionCard title="CRL simple" subtitle="Liste locale des certificats revoques selon l'API">
-        {crl.length ? crl.map((item) => (
-          <EntityRow
-            key={`crl-${item.cert_id}`}
-            title={item.common_name}
-            subtitle={`Revoque - ${item.cert_type}`}
-            meta={`Expiration initiale ${formatDate(item.expires_at)}`}
-            badgeLabel="REVOKED"
-            badgeTone="danger"
-          />
-        )) : (
-          <Text style={styles.helper}>Aucun certificat revoque pour le moment.</Text>
+      <SectionCard
+        title="CRL simple"
+        subtitle="Liste locale des certificats revoques selon l'API"
+      >
+        {crl.length ? (
+          crl.map((item) => (
+            <EntityRow
+              key={`crl-${item.cert_id}`}
+              title={item.common_name}
+              subtitle={`ID: ${item.cert_id} - Revoque - ${item.cert_type}`}
+              meta={`Expiration initiale ${formatDate(item.expires_at)}`}
+              badgeLabel="REVOKED"
+              badgeTone="danger"
+            />
+          ))
+        ) : (
+          <Text style={styles.helper}>
+            Aucun certificat revoque pour le moment.
+          </Text>
         )}
       </SectionCard>
     </ScreenContainer>
@@ -306,18 +357,18 @@ export function CertificatesScreen({ reloadKey, onDataChanged }) {
 const styles = StyleSheet.create({
   actions: { gap: 8 },
   detailBox: {
-    backgroundColor: '#063f27',
+    backgroundColor: "#063f27",
     borderRadius: 8,
     padding: 20,
     gap: 10,
   },
   detailTitle: {
-    color: '#ebfff4',
+    color: "#ebfff4",
     fontSize: 24,
-    fontWeight: '800',
+    fontWeight: "800",
   },
   detailLine: {
-    color: '#cae9d5',
+    color: "#cae9d5",
     fontSize: 15,
     lineHeight: 22,
   },
@@ -329,6 +380,6 @@ const styles = StyleSheet.create({
   error: {
     color: theme.colors.danger,
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: "700",
   },
 });

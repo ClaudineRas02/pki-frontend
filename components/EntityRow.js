@@ -1,6 +1,6 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { theme } from '../theme';
-import { Pill } from './Pill';
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { theme } from "../theme";
+import { Pill } from "./Pill";
 
 export function EntityRow({
   title,
@@ -33,7 +33,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.colors.border,
     padding: 16,
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 16,
   },
   content: {
@@ -41,13 +41,13 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   side: {
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
+    alignItems: "flex-end",
+    justifyContent: "space-between",
     gap: 12,
   },
   title: {
     color: theme.colors.text,
-    fontWeight: '700',
+    fontWeight: "700",
     fontSize: 17,
   },
   subtitle: {

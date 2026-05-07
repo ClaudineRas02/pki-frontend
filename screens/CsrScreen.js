@@ -1,41 +1,41 @@
-import { useEffect, useState } from 'react';
-import { Alert, StyleSheet, Text, View } from 'react-native';
-import { EntityRow } from '../components/EntityRow';
-import { FormField } from '../components/FormField';
-import { PrimaryButton } from '../components/PrimaryButton';
-import { ScreenContainer } from '../components/ScreenContainer';
-import { SectionCard } from '../components/SectionCard';
-import { SelectField } from '../components/SelectField';
-import { TopHero } from '../components/TopHero';
-import { csrService } from '../services/csrService';
-import { pickFile, saveExportFiles } from '../services/fileService';
-import { theme } from '../theme';
-import { formatDate } from '../utils/dateUtils';
+import { useEffect, useState } from "react";
+import { Alert, StyleSheet, Text, View } from "react-native";
+import { EntityRow } from "../components/EntityRow";
+import { FormField } from "../components/FormField";
+import { PrimaryButton } from "../components/PrimaryButton";
+import { ScreenContainer } from "../components/ScreenContainer";
+import { SectionCard } from "../components/SectionCard";
+import { SelectField } from "../components/SelectField";
+import { TopHero } from "../components/TopHero";
+import { csrService } from "../services/csrService";
+import { pickFile, saveExportFiles } from "../services/fileService";
+import { theme } from "../theme";
+import { formatDate } from "../utils/dateUtils";
 
-const ALGORITHMS = ['RSA-2048', 'RSA-4096', 'EC-256', 'EC-384'].map((a) => ({
+const ALGORITHMS = ["RSA-2048", "RSA-4096", "EC-256", "EC-384"].map((a) => ({
   label: a,
   value: a,
 }));
 
 const initialCsrForm = {
-  common_name: '',
-  algorithm: 'RSA-2048',
-  san_list: '',
-  organization: '',
-  country: '',
-  state: '',
-  locality: '',
-  organizational_unit: '',
-  email_address: '',
+  common_name: "",
+  algorithm: "RSA-2048",
+  san_list: "",
+  organization: "",
+  country: "",
+  state: "",
+  locality: "",
+  organizational_unit: "",
+  email_address: "",
   selectedKeyFile: null,
 };
 
 export function CsrScreen({ reloadKey, onDataChanged }) {
   const [csrs, setCsrs] = useState([]);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [csrForm, setCsrForm] = useState(initialCsrForm);
   const [importForm, setImportForm] = useState({
-    common_name: '',
+    common_name: "",
     selectedFile: null,
   });
 
@@ -43,12 +43,12 @@ export function CsrScreen({ reloadKey, onDataChanged }) {
 
   const loadCsrs = async () => {
     try {
-      setError('');
+      setError("");
       const result = await csrService.list();
       setCsrs(result);
     } catch (loadError) {
       setError(loadError.message);
-      notify('Echec', loadError.message);
+      notify("Echec", loadError.message);
     }
   };
 
@@ -58,14 +58,14 @@ export function CsrScreen({ reloadKey, onDataChanged }) {
 
   const execute = async (action, successMessage) => {
     try {
-      setError('');
+      setError("");
       await action();
-      notify('Succes', successMessage);
+      notify("Succes", successMessage);
       await loadCsrs();
       onDataChanged?.();
     } catch (actionError) {
       setError(actionError.message);
-      notify('Echec', actionError.message);
+      notify("Echec", actionError.message);
     }
   };
 
@@ -85,8 +85,8 @@ export function CsrScreen({ reloadKey, onDataChanged }) {
           private_key_base64: csrForm.selectedKeyFile?.base64,
         }),
       csrForm.selectedKeyFile
-        ? 'Fichier .csr genere depuis la cle privee uploadée.'
-        : 'Fichier .csr et cle privee generes.',
+        ? "Fichier .csr genere depuis la cle privee uploadée."
+        : "Fichier .csr et cle privee generes.",
     );
 
   const importCsr = () =>
@@ -96,7 +96,7 @@ export function CsrScreen({ reloadKey, onDataChanged }) {
           common_name: importForm.common_name,
           csr_base64: importForm.selectedFile?.base64,
         }),
-      'CSR importe et ajoute a la liste des artefacts.',
+      "CSR importe et ajoute a la liste des artefacts.",
     );
 
   const exportCsr = (item) =>
@@ -107,18 +107,23 @@ export function CsrScreen({ reloadKey, onDataChanged }) {
 
   return (
     <ScreenContainer>
-      <TopHero title="CSR" subtitle="Cle, sujet, domaines, fichier .csr" meta="Point d'entree PKI" />
+      <TopHero
+        title="CSR"
+        subtitle="Cle, sujet, domaines, fichier .csr"
+        meta="Point d'entree PKI"
+      />
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
       <SectionCard title="1. Cle privee">
         <Text style={styles.helper}>
-          Uploade une cle existante ou laisse vide pour generer une nouvelle cle avec OpenSSL.
+          Uploade une cle existante ou laisse vide pour generer une nouvelle cle
+          avec OpenSSL.
         </Text>
         <PrimaryButton
           compact
           tone="ghost"
-          label={csrForm.selectedKeyFile?.name || 'Uploader une .key'}
+          label={csrForm.selectedKeyFile?.name || "Uploader une .key"}
           onPress={async () => {
             const selectedKeyFile = await pickFile();
             if (selectedKeyFile) setCsrForm({ ...csrForm, selectedKeyFile });
@@ -135,14 +140,56 @@ export function CsrScreen({ reloadKey, onDataChanged }) {
       </SectionCard>
 
       <SectionCard title="2. Sujet et domaines">
-        <FormField label="Common Name" value={csrForm.common_name} onChangeText={(v) => setCsrForm({ ...csrForm, common_name: v })} placeholder="api.mondomaine.com" />
-        <FormField label="SANs" value={csrForm.san_list} onChangeText={(v) => setCsrForm({ ...csrForm, san_list: v })} placeholder="api.mondomaine.com,*.mondomaine.com" />
-        <FormField label="Organisation" value={csrForm.organization} onChangeText={(v) => setCsrForm({ ...csrForm, organization: v })} placeholder="MonEntreprise" />
-        <FormField label="Pays" value={csrForm.country} onChangeText={(v) => setCsrForm({ ...csrForm, country: v })} placeholder="MG" />
-        <FormField label="Etat / Region" value={csrForm.state} onChangeText={(v) => setCsrForm({ ...csrForm, state: v })} placeholder="Analamanga" />
-        <FormField label="Localite" value={csrForm.locality} onChangeText={(v) => setCsrForm({ ...csrForm, locality: v })} placeholder="Antananarivo" />
-        <FormField label="Unite" value={csrForm.organizational_unit} onChangeText={(v) => setCsrForm({ ...csrForm, organizational_unit: v })} placeholder="DevSecOps" />
-        <FormField label="Email" value={csrForm.email_address} onChangeText={(v) => setCsrForm({ ...csrForm, email_address: v })} placeholder="pki@entreprise.com" />
+        <FormField
+          label="Common Name"
+          value={csrForm.common_name}
+          onChangeText={(v) => setCsrForm({ ...csrForm, common_name: v })}
+          placeholder="api.mondomaine.com"
+        />
+        <FormField
+          label="SANs"
+          value={csrForm.san_list}
+          onChangeText={(v) => setCsrForm({ ...csrForm, san_list: v })}
+          placeholder="api.mondomaine.com,*.mondomaine.com"
+        />
+        <FormField
+          label="Organisation"
+          value={csrForm.organization}
+          onChangeText={(v) => setCsrForm({ ...csrForm, organization: v })}
+          placeholder="MonEntreprise"
+        />
+        <FormField
+          label="Pays"
+          value={csrForm.country}
+          onChangeText={(v) => setCsrForm({ ...csrForm, country: v })}
+          placeholder="MG"
+        />
+        <FormField
+          label="Etat / Region"
+          value={csrForm.state}
+          onChangeText={(v) => setCsrForm({ ...csrForm, state: v })}
+          placeholder="Analamanga"
+        />
+        <FormField
+          label="Localite"
+          value={csrForm.locality}
+          onChangeText={(v) => setCsrForm({ ...csrForm, locality: v })}
+          placeholder="Antananarivo"
+        />
+        <FormField
+          label="Unite"
+          value={csrForm.organizational_unit}
+          onChangeText={(v) =>
+            setCsrForm({ ...csrForm, organizational_unit: v })
+          }
+          placeholder="DevSecOps"
+        />
+        <FormField
+          label="Email"
+          value={csrForm.email_address}
+          onChangeText={(v) => setCsrForm({ ...csrForm, email_address: v })}
+          placeholder="pki@entreprise.com"
+        />
         <SelectField
           label="Algorithme"
           value={csrForm.algorithm}
@@ -153,31 +200,50 @@ export function CsrScreen({ reloadKey, onDataChanged }) {
       </SectionCard>
 
       <SectionCard title="Importer un CSR">
-        <FormField label="Common Name" value={importForm.common_name} onChangeText={(v) => setImportForm({ ...importForm, common_name: v })} placeholder="external.mondomaine.com" />
-        <PrimaryButton compact tone="ghost" label={importForm.selectedFile?.name || 'Choisir fichier .csr'} onPress={async () => {
-          const selectedFile = await pickFile();
-          if (selectedFile) setImportForm({ ...importForm, selectedFile });
-        }} />
+        <FormField
+          label="Common Name"
+          value={importForm.common_name}
+          onChangeText={(v) => setImportForm({ ...importForm, common_name: v })}
+          placeholder="external.mondomaine.com"
+        />
+        <PrimaryButton
+          compact
+          tone="ghost"
+          label={importForm.selectedFile?.name || "Choisir fichier .csr"}
+          onPress={async () => {
+            const selectedFile = await pickFile();
+            if (selectedFile) setImportForm({ ...importForm, selectedFile });
+          }}
+        />
         <PrimaryButton label="Importer le .csr" onPress={importCsr} />
       </SectionCard>
 
       <SectionCard title="Liste des CSR">
-        {csrs.length ? csrs.map((item) => (
-          <EntityRow
-            key={item.csr_id}
-            title={item.common_name}
-            subtitle={`${item.algorithm || 'N/A'} - fichier .csr ${item.csr_path ? 'present' : 'absent'}`}
-            meta={`Cree le ${formatDate(item.created_at)}${item.ca_name ? ` - signe par ${item.ca_name}` : ''}`}
-            badgeLabel={item.status}
-            badgeTone={item.status === 'SIGNED' ? 'success' : 'info'}
-            actions={
-              <View style={styles.actions}>
-                <PrimaryButton compact tone="ghost" label="Exporter" onPress={() => exportCsr(item)} />
-              </View>
-            }
-          />
-        )) : (
-          <Text style={styles.helper}>Aucun CSR genere ou importe pour le moment.</Text>
+        {csrs.length ? (
+          csrs.map((item) => (
+            <EntityRow
+              key={item.csr_id}
+              title={item.common_name}
+              subtitle={`ID: ${item.csr_id} - ${item.algorithm || "N/A"} - fichier .csr ${item.csr_path ? "present" : "absent"}`}
+              meta={`Cree le ${formatDate(item.created_at)}${item.ca_name ? ` - signe par ${item.ca_name}` : ""}`}
+              badgeLabel={item.status}
+              badgeTone={item.status === "SIGNED" ? "success" : "info"}
+              actions={
+                <View style={styles.actions}>
+                  <PrimaryButton
+                    compact
+                    tone="ghost"
+                    label="Exporter"
+                    onPress={() => exportCsr(item)}
+                  />
+                </View>
+              }
+            />
+          ))
+        ) : (
+          <Text style={styles.helper}>
+            Aucun CSR genere ou importe pour le moment.
+          </Text>
         )}
       </SectionCard>
     </ScreenContainer>
@@ -194,6 +260,6 @@ const styles = StyleSheet.create({
   error: {
     color: theme.colors.danger,
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: "700",
   },
 });
