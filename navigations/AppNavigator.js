@@ -6,6 +6,7 @@ import { CertificatesScreen } from '../screens/CertificatesScreen';
 import { CsrScreen } from '../screens/CsrScreen';
 import { ArtifactsScreen } from '../screens/ArtifactsScreen';
 import { theme } from '../theme';
+import { LoginScreen } from '../screens/LoginScreen';
 
 const tabs = [
   { key: 'dashboard', label: 'Dashboard' },
@@ -16,6 +17,7 @@ const tabs = [
 ];
 
 export function AppNavigator() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [reloadKey, setReloadKey] = useState(0);
 
@@ -26,6 +28,10 @@ export function AppNavigator() {
   useEffect(() => {
     triggerRefresh();
   }, [activeTab]);
+
+  if (!isAuthenticated) {
+    return <LoginScreen onLogin={() => setIsAuthenticated(true)} />;
+  }
 
   let screen = <DashboardScreen reloadKey={reloadKey} onDataChanged={triggerRefresh} />;
 
