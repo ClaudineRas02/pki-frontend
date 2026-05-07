@@ -5,6 +5,7 @@ import { FormField } from '../components/FormField';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { SectionCard } from '../components/SectionCard';
+import { SelectField } from '../components/SelectField';
 import { TopHero } from '../components/TopHero';
 import { caService } from '../services/caService';
 import { certificateService } from '../services/certificateService';
@@ -12,6 +13,11 @@ import { csrService } from '../services/csrService';
 import { pickFile, saveExportFiles } from '../services/fileService';
 import { theme } from '../theme';
 import { formatDate, getDaysUntil, getExpiryBand } from '../utils/dateUtils';
+
+const CERT_TYPES = ['SERVER', 'CLIENT', 'EMAIL', 'CODE_SIGNING'].map((t) => ({
+  label: t,
+  value: t,
+}));
 
 const initialImportForm = {
   common_name: '',
@@ -22,26 +28,19 @@ const initialImportForm = {
 };
 
 const badgeToneFromStatus = (status, daysUntil) => {
-  if (status === 'REVOKED') {
-    return 'danger';
-  }
-
+  if (status === 'REVOKED') return 'danger';
   const band = getExpiryBand(daysUntil);
-  if (band === 'critical' || band === 'expired') {
-    return 'danger';
-  }
-
-  if (band === 'warning' || band === 'watch') {
-    return 'warning';
-  }
-
+  if (band === 'critical' || band === 'expired') return 'danger';
+  if (band === 'warning' || band === 'watch') return 'warning';
   return 'success';
 };
 
 export function CertificatesScreen({ reloadKey, onDataChanged }) {
   const [certificates, setCertificates] = useState([]);
   const [cas, setCas] = useState([]);
+  const [casSummary, setCasSummary] = useState([]);
   const [csrs, setCsrs] = useState([]);
+  const [csrsSummary, setCsrsSummary] = useState([]);
   const [details, setDetails] = useState(null);
   const [error, setError] = useState('');
   const [signForm, setSignForm] = useState({
@@ -57,14 +56,18 @@ export function CertificatesScreen({ reloadKey, onDataChanged }) {
   const loadData = async () => {
     try {
       setError('');
-      const [certificatesResult, casResult, csrsResult] = await Promise.all([
+      const [certificatesResult, casResult, csrsResult, casSummaryResult, csrsSummaryResult] = await Promise.all([
         certificateService.list(),
         caService.list(),
         csrService.list(),
+        caService.summary(),
+        csrService.summary(),
       ]);
       setCertificates(certificatesResult);
       setCas(casResult);
       setCsrs(csrsResult);
+      setCasSummary(casSummaryResult);
+      setCsrsSummary(csrsSummaryResult);
     } catch (loadError) {
       setError(loadError.message);
       notify('Echec', loadError.message);
@@ -138,6 +141,16 @@ export function CertificatesScreen({ reloadKey, onDataChanged }) {
       'CRT importe et ajoute a la liste des artefacts.',
     );
 
+  const csrOptions = csrsSummary.map((c) => ({
+    label: `[${c.csr_id}] ${c.common_name}`,
+    value: String(c.csr_id),
+  }));
+
+  const caOptions = casSummary.map((ca) => ({
+    label: `[${ca.ca_id}] ${ca.name}`,
+    value: String(ca.ca_id),
+  }));
+
   const crl = certificates.filter((item) => item.status === 'REVOKED');
   const pendingCsrs = csrs.filter((item) => item.status !== 'SIGNED');
 
@@ -148,10 +161,27 @@ export function CertificatesScreen({ reloadKey, onDataChanged }) {
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
       <SectionCard title="Signer un CSR en CRT">
-        <FormField label="CSR ID" value={signForm.csr_id} onChangeText={(value) => setSignForm({ ...signForm, csr_id: value })} placeholder="12" keyboardType="numeric" />
-        <FormField label="CA ID" value={signForm.ca_id} onChangeText={(value) => setSignForm({ ...signForm, ca_id: value })} placeholder="3" keyboardType="numeric" />
-        <FormField label="Validite (jours)" value={signForm.validity_days} onChangeText={(value) => setSignForm({ ...signForm, validity_days: value })} placeholder="365" keyboardType="numeric" />
-        <FormField label="Type certificat" value={signForm.cert_type} onChangeText={(value) => setSignForm({ ...signForm, cert_type: value })} placeholder="SERVER" />
+        <SelectField
+          label="CSR"
+          value={signForm.csr_id}
+          options={csrOptions}
+          onChange={(v) => setSignForm({ ...signForm, csr_id: v })}
+          placeholder="-- Choisir un CSR --"
+        />
+        <SelectField
+          label="CA"
+          value={signForm.ca_id}
+          options={caOptions}
+          onChange={(v) => setSignForm({ ...signForm, ca_id: v })}
+          placeholder="-- Choisir une CA --"
+        />
+        <FormField label="Validite (jours)" value={signForm.validity_days} onChangeText={(v) => setSignForm({ ...signForm, validity_days: v })} placeholder="365" keyboardType="numeric" />
+        <SelectField
+          label="Type certificat"
+          value={signForm.cert_type}
+          options={CERT_TYPES}
+          onChange={(v) => setSignForm({ ...signForm, cert_type: v })}
+        />
         <PrimaryButton label="Signer et generer le .crt" onPress={signSelectedCsr} />
       </SectionCard>
 
@@ -188,20 +218,27 @@ export function CertificatesScreen({ reloadKey, onDataChanged }) {
       </SectionCard>
 
       <SectionCard title="Importer un CRT existant">
-        <FormField label="Type" value={importForm.cert_type} onChangeText={(value) => setImportForm({ ...importForm, cert_type: value })} placeholder="SERVER" />
-        <FormField label="Common Name" value={importForm.common_name} onChangeText={(value) => setImportForm({ ...importForm, common_name: value })} placeholder="mail.mondomaine.com" />
-        <FormField label="CA ID" value={importForm.ca_id} onChangeText={(value) => setImportForm({ ...importForm, ca_id: value })} placeholder="Optionnel" keyboardType="numeric" />
+        <SelectField
+          label="Type"
+          value={importForm.cert_type}
+          options={CERT_TYPES}
+          onChange={(v) => setImportForm({ ...importForm, cert_type: v })}
+        />
+        <FormField label="Common Name" value={importForm.common_name} onChangeText={(v) => setImportForm({ ...importForm, common_name: v })} placeholder="mail.mondomaine.com" />
+        <SelectField
+          label="CA (optionnel)"
+          value={importForm.ca_id}
+          options={caOptions}
+          onChange={(v) => setImportForm({ ...importForm, ca_id: v })}
+          placeholder="-- Aucune --"
+        />
         <PrimaryButton compact tone="ghost" label={importForm.selectedCertFile?.name || 'Choisir certificat .crt / .pem'} onPress={async () => {
           const selectedFile = await pickFile();
-          if (selectedFile) {
-            setImportForm({ ...importForm, selectedCertFile: selectedFile });
-          }
+          if (selectedFile) setImportForm({ ...importForm, selectedCertFile: selectedFile });
         }} />
         <PrimaryButton compact tone="ghost" label={importForm.selectedKeyFile?.name || 'Choisir cle privee'} onPress={async () => {
           const selectedFile = await pickFile();
-          if (selectedFile) {
-            setImportForm({ ...importForm, selectedKeyFile: selectedFile });
-          }
+          if (selectedFile) setImportForm({ ...importForm, selectedKeyFile: selectedFile });
         }} />
         <PrimaryButton label="Importer le CRT" onPress={importCertificate} />
       </SectionCard>
@@ -267,9 +304,7 @@ export function CertificatesScreen({ reloadKey, onDataChanged }) {
 }
 
 const styles = StyleSheet.create({
-  actions: {
-    gap: 8,
-  },
+  actions: { gap: 8 },
   detailBox: {
     backgroundColor: '#063f27',
     borderRadius: 8,

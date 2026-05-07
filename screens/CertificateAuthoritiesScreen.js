@@ -6,11 +6,17 @@ import { InlineMessage } from "../components/InlineMessage";
 import { PrimaryButton } from "../components/PrimaryButton";
 import { ScreenContainer } from "../components/ScreenContainer";
 import { SectionCard } from "../components/SectionCard";
+import { SelectField } from "../components/SelectField";
 import { TopHero } from "../components/TopHero";
 import { caService } from "../services/caService";
 import { pickUploadFile, saveExportFiles } from "../services/fileService";
 import { theme } from "../theme";
 import { formatDate } from "../utils/dateUtils";
+
+const ALGORITHMS = ["RSA-2048", "RSA-4096", "EC-256", "EC-384"].map((a) => ({
+  label: a,
+  value: a,
+}));
 
 const createInitialForm = () => ({
   name: "",
@@ -31,6 +37,7 @@ const createInitialForm = () => ({
 
 export function CertificateAuthoritiesScreen({ reloadKey, onDataChanged }) {
   const [cas, setCas] = useState([]);
+  const [casSummary, setCasSummary] = useState([]);
   const [chain, setChain] = useState([]);
   const [selectedCaId, setSelectedCaId] = useState(null);
   const [message, setMessage] = useState("");
@@ -44,13 +51,18 @@ export function CertificateAuthoritiesScreen({ reloadKey, onDataChanged }) {
     ...createInitialForm(),
     ca_type: "ROOT",
   });
+
   const notify = (title, text) => Alert.alert(title, text);
 
   const loadData = async () => {
     try {
       setError("");
-      const result = await caService.list();
+      const [result, summary] = await Promise.all([
+        caService.list(),
+        caService.summary(),
+      ]);
       setCas(result);
+      setCasSummary(summary);
     } catch (loadError) {
       setError(loadError.message);
       notify("Echec", loadError.message);
@@ -87,6 +99,11 @@ export function CertificateAuthoritiesScreen({ reloadKey, onDataChanged }) {
     }
   };
 
+  const parentCAOptions = casSummary.map((ca) => ({
+    label: `[${ca.ca_id}] ${ca.name}`,
+    value: String(ca.ca_id),
+  }));
+
   return (
     <ScreenContainer>
       <TopHero
@@ -100,92 +117,29 @@ export function CertificateAuthoritiesScreen({ reloadKey, onDataChanged }) {
       />
 
       <SectionCard title="Creer une Root CA">
-        <FormField
-          label="Nom"
-          value={rootForm.name}
-          onChangeText={(value) => setRootForm({ ...rootForm, name: value })}
-          placeholder="Root CA - MonEntreprise"
-        />
-        <FormField
-          label="Common Name"
-          value={rootForm.common_name}
-          onChangeText={(value) =>
-            setRootForm({ ...rootForm, common_name: value })
-          }
-          placeholder="Root CA - MonEntreprise"
-        />
-        <FormField
-          label="Organisation"
-          value={rootForm.organization}
-          onChangeText={(value) =>
-            setRootForm({ ...rootForm, organization: value })
-          }
-          placeholder="MonEntreprise"
-        />
-        <FormField
-          label="Unite"
-          value={rootForm.organizational_unit}
-          onChangeText={(value) =>
-            setRootForm({ ...rootForm, organizational_unit: value })
-          }
-          placeholder="Security"
-        />
-        <FormField
-          label="Pays"
-          value={rootForm.country}
-          onChangeText={(value) => setRootForm({ ...rootForm, country: value })}
-          placeholder="MG"
-        />
-        <FormField
-          label="Etat / Region"
-          value={rootForm.state}
-          onChangeText={(value) => setRootForm({ ...rootForm, state: value })}
-          placeholder="Analamanga"
-        />
-        <FormField
-          label="Localite"
-          value={rootForm.locality}
-          onChangeText={(value) =>
-            setRootForm({ ...rootForm, locality: value })
-          }
-          placeholder="Antananarivo"
-        />
-        <FormField
-          label="Email"
-          value={rootForm.email_address}
-          onChangeText={(value) =>
-            setRootForm({ ...rootForm, email_address: value })
-          }
-          placeholder="pki@entreprise.com"
-        />
-        <FormField
-          label="Validite (jours)"
-          value={rootForm.validity_days}
-          onChangeText={(value) =>
-            setRootForm({ ...rootForm, validity_days: value })
-          }
-          placeholder="365"
-          keyboardType="numeric"
-        />
-        <FormField
+        <FormField label="Nom" value={rootForm.name} onChangeText={(v) => setRootForm({ ...rootForm, name: v })} placeholder="Root CA - MonEntreprise" />
+        <FormField label="Common Name" value={rootForm.common_name} onChangeText={(v) => setRootForm({ ...rootForm, common_name: v })} placeholder="Root CA - MonEntreprise" />
+        <FormField label="Organisation" value={rootForm.organization} onChangeText={(v) => setRootForm({ ...rootForm, organization: v })} placeholder="MonEntreprise" />
+        <FormField label="Unite" value={rootForm.organizational_unit} onChangeText={(v) => setRootForm({ ...rootForm, organizational_unit: v })} placeholder="Security" />
+        <FormField label="Pays" value={rootForm.country} onChangeText={(v) => setRootForm({ ...rootForm, country: v })} placeholder="MG" />
+        <FormField label="Etat / Region" value={rootForm.state} onChangeText={(v) => setRootForm({ ...rootForm, state: v })} placeholder="Analamanga" />
+        <FormField label="Localite" value={rootForm.locality} onChangeText={(v) => setRootForm({ ...rootForm, locality: v })} placeholder="Antananarivo" />
+        <FormField label="Email" value={rootForm.email_address} onChangeText={(v) => setRootForm({ ...rootForm, email_address: v })} placeholder="pki@entreprise.com" />
+        <FormField label="Validite (jours)" value={rootForm.validity_days} onChangeText={(v) => setRootForm({ ...rootForm, validity_days: v })} placeholder="365" keyboardType="numeric" />
+        <SelectField
           label="Algorithme"
           value={rootForm.algorithm}
-          onChangeText={(value) =>
-            setRootForm({ ...rootForm, algorithm: value })
-          }
-          placeholder="RSA-2048"
+          options={ALGORITHMS}
+          onChange={(v) => setRootForm({ ...rootForm, algorithm: v })}
         />
         <PrimaryButton
           label="Creer la Root CA"
           onPress={() =>
             execute(
-              () =>
-                caService.createRoot({
-                  ...rootForm,
-                  validity_days: rootForm.validity_days
-                    ? Number(rootForm.validity_days)
-                    : null,
-                }),
+              () => caService.createRoot({
+                ...rootForm,
+                validity_days: rootForm.validity_days ? Number(rootForm.validity_days) : null,
+              }),
               "Root CA creee avec succes.",
             )
           }
@@ -193,113 +147,37 @@ export function CertificateAuthoritiesScreen({ reloadKey, onDataChanged }) {
       </SectionCard>
 
       <SectionCard title="Creer une CA intermediaire">
-        <FormField
-          label="Nom"
-          value={intermediateForm.name}
-          onChangeText={(value) =>
-            setIntermediateForm({ ...intermediateForm, name: value })
-          }
-          placeholder="Intermediate CA - Prod"
-        />
-        <FormField
-          label="Common Name"
-          value={intermediateForm.common_name}
-          onChangeText={(value) =>
-            setIntermediateForm({ ...intermediateForm, common_name: value })
-          }
-          placeholder="Intermediate CA - Prod"
-        />
-        <FormField
-          label="CA parente (ID)"
+        <FormField label="Nom" value={intermediateForm.name} onChangeText={(v) => setIntermediateForm({ ...intermediateForm, name: v })} placeholder="Intermediate CA - Prod" />
+        <FormField label="Common Name" value={intermediateForm.common_name} onChangeText={(v) => setIntermediateForm({ ...intermediateForm, common_name: v })} placeholder="Intermediate CA - Prod" />
+        <SelectField
+          label="CA Parente"
           value={intermediateForm.parent_ca_id}
-          onChangeText={(value) =>
-            setIntermediateForm({ ...intermediateForm, parent_ca_id: value })
-          }
-          placeholder="1"
-          keyboardType="numeric"
+          options={parentCAOptions}
+          onChange={(v) => setIntermediateForm({ ...intermediateForm, parent_ca_id: v })}
+          placeholder="-- Aucune --"
         />
-        <FormField
-          label="Validite (jours)"
-          value={intermediateForm.validity_days}
-          onChangeText={(value) =>
-            setIntermediateForm({ ...intermediateForm, validity_days: value })
-          }
-          placeholder="365"
-          keyboardType="numeric"
-        />
-        <FormField
-          label="Organisation"
-          value={intermediateForm.organization}
-          onChangeText={(value) =>
-            setIntermediateForm({ ...intermediateForm, organization: value })
-          }
-          placeholder="MonEntreprise"
-        />
-        <FormField
-          label="Unite"
-          value={intermediateForm.organizational_unit}
-          onChangeText={(value) =>
-            setIntermediateForm({
-              ...intermediateForm,
-              organizational_unit: value,
-            })
-          }
-          placeholder="Infra"
-        />
-        <FormField
-          label="Pays"
-          value={intermediateForm.country}
-          onChangeText={(value) =>
-            setIntermediateForm({ ...intermediateForm, country: value })
-          }
-          placeholder="MG"
-        />
-        <FormField
-          label="Etat / Region"
-          value={intermediateForm.state}
-          onChangeText={(value) =>
-            setIntermediateForm({ ...intermediateForm, state: value })
-          }
-          placeholder="Analamanga"
-        />
-        <FormField
-          label="Localite"
-          value={intermediateForm.locality}
-          onChangeText={(value) =>
-            setIntermediateForm({ ...intermediateForm, locality: value })
-          }
-          placeholder="Antananarivo"
-        />
-        <FormField
-          label="Email"
-          value={intermediateForm.email_address}
-          onChangeText={(value) =>
-            setIntermediateForm({ ...intermediateForm, email_address: value })
-          }
-          placeholder="infra@entreprise.com"
-        />
-        <FormField
+        <FormField label="Validite (jours)" value={intermediateForm.validity_days} onChangeText={(v) => setIntermediateForm({ ...intermediateForm, validity_days: v })} placeholder="365" keyboardType="numeric" />
+        <FormField label="Organisation" value={intermediateForm.organization} onChangeText={(v) => setIntermediateForm({ ...intermediateForm, organization: v })} placeholder="MonEntreprise" />
+        <FormField label="Unite" value={intermediateForm.organizational_unit} onChangeText={(v) => setIntermediateForm({ ...intermediateForm, organizational_unit: v })} placeholder="Infra" />
+        <FormField label="Pays" value={intermediateForm.country} onChangeText={(v) => setIntermediateForm({ ...intermediateForm, country: v })} placeholder="MG" />
+        <FormField label="Etat / Region" value={intermediateForm.state} onChangeText={(v) => setIntermediateForm({ ...intermediateForm, state: v })} placeholder="Analamanga" />
+        <FormField label="Localite" value={intermediateForm.locality} onChangeText={(v) => setIntermediateForm({ ...intermediateForm, locality: v })} placeholder="Antananarivo" />
+        <FormField label="Email" value={intermediateForm.email_address} onChangeText={(v) => setIntermediateForm({ ...intermediateForm, email_address: v })} placeholder="infra@entreprise.com" />
+        <SelectField
           label="Algorithme"
           value={intermediateForm.algorithm}
-          onChangeText={(value) =>
-            setIntermediateForm({ ...intermediateForm, algorithm: value })
-          }
-          placeholder="RSA-2048"
+          options={ALGORITHMS}
+          onChange={(v) => setIntermediateForm({ ...intermediateForm, algorithm: v })}
         />
         <PrimaryButton
           label="Creer la CA intermediaire"
           onPress={() =>
             execute(
-              () =>
-                caService.createIntermediate({
-                  ...intermediateForm,
-                  parent_ca_id: intermediateForm.parent_ca_id
-                    ? Number(intermediateForm.parent_ca_id)
-                    : null,
-                  validity_days: intermediateForm.validity_days
-                    ? Number(intermediateForm.validity_days)
-                    : null,
-                }),
+              () => caService.createIntermediate({
+                ...intermediateForm,
+                parent_ca_id: intermediateForm.parent_ca_id ? Number(intermediateForm.parent_ca_id) : null,
+                validity_days: intermediateForm.validity_days ? Number(intermediateForm.validity_days) : null,
+              }),
               "CA intermediaire créée avec succes.",
             )
           }
@@ -307,80 +185,45 @@ export function CertificateAuthoritiesScreen({ reloadKey, onDataChanged }) {
       </SectionCard>
 
       <SectionCard title="Importer une CA">
-        <FormField
-          label="Nom"
-          value={importForm.name}
-          onChangeText={(value) =>
-            setImportForm({ ...importForm, name: value })
-          }
-          placeholder="Imported CA"
-        />
-        <FormField
-          label="Type"
-          value={importForm.ca_type}
-          onChangeText={(value) =>
-            setImportForm({ ...importForm, ca_type: value })
-          }
-          placeholder="ROOT ou INTERMEDIATE"
-        />
-        <FormField
-          label="CA parente (ID)"
+        <FormField label="Nom" value={importForm.name} onChangeText={(v) => setImportForm({ ...importForm, name: v })} placeholder="Imported CA" />
+        <FormField label="Type" value={importForm.ca_type} onChangeText={(v) => setImportForm({ ...importForm, ca_type: v })} placeholder="ROOT ou INTERMEDIATE" />
+        <SelectField
+          label="CA Parente"
           value={importForm.parent_ca_id}
-          onChangeText={(value) =>
-            setImportForm({ ...importForm, parent_ca_id: value })
-          }
-          placeholder="Optionnel"
-          keyboardType="numeric"
+          options={parentCAOptions}
+          onChange={(v) => setImportForm({ ...importForm, parent_ca_id: v })}
+          placeholder="-- Aucune --"
         />
-        <PrimaryButton
-          compact
-          tone="ghost"
-          label={
-            importForm.selectedCertFile?.name ||
-            "Choisir certificat .crt / .pem"
-          }
+        <PrimaryButton compact tone="ghost" label={importForm.selectedCertFile?.name || "Choisir certificat .crt / .pem"}
           onPress={async () => {
-            const selectedFile = await pickUploadFile();
-            if (selectedFile) {
-              setImportForm({ ...importForm, selectedCertFile: selectedFile });
-            }
+            const f = await pickUploadFile();
+            if (f) setImportForm({ ...importForm, selectedCertFile: f });
           }}
         />
-        <PrimaryButton
-          compact
-          tone="ghost"
-          label={importForm.selectedKeyFile?.name || "Choisir cle privee"}
+        <PrimaryButton compact tone="ghost" label={importForm.selectedKeyFile?.name || "Choisir cle privee"}
           onPress={async () => {
-            const selectedFile = await pickUploadFile();
-            if (selectedFile) {
-              setImportForm({ ...importForm, selectedKeyFile: selectedFile });
-            }
+            const f = await pickUploadFile();
+            if (f) setImportForm({ ...importForm, selectedKeyFile: f });
           }}
         />
         <PrimaryButton
           label="Importer la CA"
           onPress={() =>
             execute(
-              () =>
-                caService.importOne({
-                  name: importForm.name,
-                  ca_type: importForm.ca_type,
-                  parent_ca_id: importForm.parent_ca_id
-                    ? Number(importForm.parent_ca_id)
-                    : null,
-                  certificateFile: importForm.selectedCertFile,
-                  privateKeyFile: importForm.selectedKeyFile,
-                }),
+              () => caService.importOne({
+                name: importForm.name,
+                ca_type: importForm.ca_type,
+                parent_ca_id: importForm.parent_ca_id ? Number(importForm.parent_ca_id) : null,
+                certificateFile: importForm.selectedCertFile,
+                privateKeyFile: importForm.selectedKeyFile,
+              }),
               "CA importee avec succes.",
             )
           }
         />
       </SectionCard>
 
-      <SectionCard
-        title="Authorities enregistrees"
-        subtitle="Tape pour charger la chaine de confiance"
-      >
+      <SectionCard title="Authorities enregistrees" subtitle="Tape pour charger la chaine de confiance">
         {cas.map((item) => (
           <EntityRow
             key={item.ca_id}
@@ -392,10 +235,7 @@ export function CertificateAuthoritiesScreen({ reloadKey, onDataChanged }) {
             onPress={() => loadChain(item.ca_id)}
             actions={
               <View style={styles.actions}>
-                <PrimaryButton
-                  compact
-                  tone="ghost"
-                  label="Exporter"
+                <PrimaryButton compact tone="ghost" label="Exporter"
                   onPress={() =>
                     execute(async () => {
                       const exported = await caService.exportOne(item.ca_id);
@@ -403,16 +243,8 @@ export function CertificateAuthoritiesScreen({ reloadKey, onDataChanged }) {
                     }, `Export PEM de ${item.name} prepare.`)
                   }
                 />
-                <PrimaryButton
-                  compact
-                  tone="danger"
-                  label="Supprimer"
-                  onPress={() =>
-                    execute(
-                      () => caService.remove(item.ca_id),
-                      `${item.name} supprimee.`,
-                    )
-                  }
+                <PrimaryButton compact tone="danger" label="Supprimer"
+                  onPress={() => execute(() => caService.remove(item.ca_id), `${item.name} supprimee.`)}
                 />
               </View>
             }
@@ -422,25 +254,17 @@ export function CertificateAuthoritiesScreen({ reloadKey, onDataChanged }) {
 
       <SectionCard
         title="Chaine de confiance"
-        subtitle={
-          selectedCaId
-            ? `CA selectionnee: ${selectedCaId}`
-            : "Selectionne une CA pour visualiser sa chaine"
-        }
+        subtitle={selectedCaId ? `CA selectionnee: ${selectedCaId}` : "Selectionne une CA pour visualiser sa chaine"}
       >
         {chain.length ? (
           chain.map((item, index) => (
             <View key={`${item.ca_id}-${index}`} style={styles.chainNode}>
               <Text style={styles.chainTitle}>{item.name}</Text>
-              <Text style={styles.chainMeta}>
-                {item.ca_type} - statut {item.status}
-              </Text>
+              <Text style={styles.chainMeta}>{item.ca_type} - statut {item.status}</Text>
             </View>
           ))
         ) : (
-          <Text style={styles.empty}>
-            La chaine apparaitra ici apres selection.
-          </Text>
+          <Text style={styles.empty}>La chaine apparaitra ici apres selection.</Text>
         )}
       </SectionCard>
     </ScreenContainer>
@@ -448,9 +272,7 @@ export function CertificateAuthoritiesScreen({ reloadKey, onDataChanged }) {
 }
 
 const styles = StyleSheet.create({
-  actions: {
-    gap: 8,
-  },
+  actions: { gap: 8 },
   chainNode: {
     padding: 14,
     borderRadius: 16,
@@ -459,15 +281,7 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.border,
     gap: 4,
   },
-  chainTitle: {
-    color: theme.colors.text,
-    fontSize: 16,
-    fontWeight: "700",
-  },
-  chainMeta: {
-    color: theme.colors.textMuted,
-  },
-  empty: {
-    color: theme.colors.textMuted,
-  },
+  chainTitle: { color: theme.colors.text, fontSize: 16, fontWeight: "700" },
+  chainMeta: { color: theme.colors.textMuted },
+  empty: { color: theme.colors.textMuted },
 });

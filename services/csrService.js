@@ -7,4 +7,5 @@ export const csrService = {
     apiRequest(`/csrs/${csrId}/submit`, { method: 'POST', body: payload }),
   importOne: (payload) => apiRequest('/csrs/import', { method: 'POST', body: payload }),
   exportOne: (csrId) => apiRequest(`/csrs/${csrId}/export`),
+  summary: () => apiRequest('/csrs/summary'),
 };

@@ -31,4 +31,5 @@ export const caService = {
   getChain: (caId) => apiRequest(`/cas/${caId}/chain`),
   update: (caId, payload) => apiRequest(`/cas/${caId}`, { method: 'PUT', body: payload }),
   remove: (caId) => apiRequest(`/cas/${caId}`, { method: 'DELETE' }),
+  summary: () => apiRequest('/cas/summary'),
 };

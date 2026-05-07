@@ -5,11 +5,17 @@ import { FormField } from '../components/FormField';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { ScreenContainer } from '../components/ScreenContainer';
 import { SectionCard } from '../components/SectionCard';
+import { SelectField } from '../components/SelectField';
 import { TopHero } from '../components/TopHero';
 import { csrService } from '../services/csrService';
 import { pickFile, saveExportFiles } from '../services/fileService';
 import { theme } from '../theme';
 import { formatDate } from '../utils/dateUtils';
+
+const ALGORITHMS = ['RSA-2048', 'RSA-4096', 'EC-256', 'EC-384'].map((a) => ({
+  label: a,
+  value: a,
+}));
 
 const initialCsrForm = {
   common_name: '',
@@ -115,9 +121,7 @@ export function CsrScreen({ reloadKey, onDataChanged }) {
           label={csrForm.selectedKeyFile?.name || 'Uploader une .key'}
           onPress={async () => {
             const selectedKeyFile = await pickFile();
-            if (selectedKeyFile) {
-              setCsrForm({ ...csrForm, selectedKeyFile });
-            }
+            if (selectedKeyFile) setCsrForm({ ...csrForm, selectedKeyFile });
           }}
         />
         {csrForm.selectedKeyFile ? (
@@ -131,25 +135,28 @@ export function CsrScreen({ reloadKey, onDataChanged }) {
       </SectionCard>
 
       <SectionCard title="2. Sujet et domaines">
-        <FormField label="Common Name" value={csrForm.common_name} onChangeText={(value) => setCsrForm({ ...csrForm, common_name: value })} placeholder="api.mondomaine.com" />
-        <FormField label="SANs" value={csrForm.san_list} onChangeText={(value) => setCsrForm({ ...csrForm, san_list: value })} placeholder="api.mondomaine.com,*.mondomaine.com" />
-        <FormField label="Organisation" value={csrForm.organization} onChangeText={(value) => setCsrForm({ ...csrForm, organization: value })} placeholder="MonEntreprise" />
-        <FormField label="Pays" value={csrForm.country} onChangeText={(value) => setCsrForm({ ...csrForm, country: value })} placeholder="MG" />
-        <FormField label="Etat / Region" value={csrForm.state} onChangeText={(value) => setCsrForm({ ...csrForm, state: value })} placeholder="Analamanga" />
-        <FormField label="Localite" value={csrForm.locality} onChangeText={(value) => setCsrForm({ ...csrForm, locality: value })} placeholder="Antananarivo" />
-        <FormField label="Unite" value={csrForm.organizational_unit} onChangeText={(value) => setCsrForm({ ...csrForm, organizational_unit: value })} placeholder="DevSecOps" />
-        <FormField label="Email" value={csrForm.email_address} onChangeText={(value) => setCsrForm({ ...csrForm, email_address: value })} placeholder="pki@entreprise.com" />
-        <FormField label="Algorithme" value={csrForm.algorithm} onChangeText={(value) => setCsrForm({ ...csrForm, algorithm: value })} placeholder="RSA-2048" />
+        <FormField label="Common Name" value={csrForm.common_name} onChangeText={(v) => setCsrForm({ ...csrForm, common_name: v })} placeholder="api.mondomaine.com" />
+        <FormField label="SANs" value={csrForm.san_list} onChangeText={(v) => setCsrForm({ ...csrForm, san_list: v })} placeholder="api.mondomaine.com,*.mondomaine.com" />
+        <FormField label="Organisation" value={csrForm.organization} onChangeText={(v) => setCsrForm({ ...csrForm, organization: v })} placeholder="MonEntreprise" />
+        <FormField label="Pays" value={csrForm.country} onChangeText={(v) => setCsrForm({ ...csrForm, country: v })} placeholder="MG" />
+        <FormField label="Etat / Region" value={csrForm.state} onChangeText={(v) => setCsrForm({ ...csrForm, state: v })} placeholder="Analamanga" />
+        <FormField label="Localite" value={csrForm.locality} onChangeText={(v) => setCsrForm({ ...csrForm, locality: v })} placeholder="Antananarivo" />
+        <FormField label="Unite" value={csrForm.organizational_unit} onChangeText={(v) => setCsrForm({ ...csrForm, organizational_unit: v })} placeholder="DevSecOps" />
+        <FormField label="Email" value={csrForm.email_address} onChangeText={(v) => setCsrForm({ ...csrForm, email_address: v })} placeholder="pki@entreprise.com" />
+        <SelectField
+          label="Algorithme"
+          value={csrForm.algorithm}
+          options={ALGORITHMS}
+          onChange={(v) => setCsrForm({ ...csrForm, algorithm: v })}
+        />
         <PrimaryButton label="Generer le fichier .csr" onPress={generateCsr} />
       </SectionCard>
 
       <SectionCard title="Importer un CSR">
-        <FormField label="Common Name" value={importForm.common_name} onChangeText={(value) => setImportForm({ ...importForm, common_name: value })} placeholder="external.mondomaine.com" />
+        <FormField label="Common Name" value={importForm.common_name} onChangeText={(v) => setImportForm({ ...importForm, common_name: v })} placeholder="external.mondomaine.com" />
         <PrimaryButton compact tone="ghost" label={importForm.selectedFile?.name || 'Choisir fichier .csr'} onPress={async () => {
           const selectedFile = await pickFile();
-          if (selectedFile) {
-            setImportForm({ ...importForm, selectedFile });
-          }
+          if (selectedFile) setImportForm({ ...importForm, selectedFile });
         }} />
         <PrimaryButton label="Importer le .csr" onPress={importCsr} />
       </SectionCard>
@@ -178,9 +185,7 @@ export function CsrScreen({ reloadKey, onDataChanged }) {
 }
 
 const styles = StyleSheet.create({
-  actions: {
-    gap: 8,
-  },
+  actions: { gap: 8 },
   helper: {
     color: theme.colors.textMuted,
     fontSize: 14,
